@@ -5,7 +5,7 @@ from langchain_core.tools import tool, StructuredTool
 from langgraph.graph import START, StateGraph
 from langgraph.graph.message import AnyMessage, add_messages
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
-from langchain_openai import ChatOpenAI
+from langchain_aws import ChatBedrock
 
 # Define a search tool using DuckDuckGo API wrapper
 search_DDG = StructuredTool.from_function(
@@ -53,9 +53,10 @@ def should_continue(state: GraphsState) -> Literal["tools", "__end__"]:
 # Core invocation of the model
 def _call_model(state: GraphsState):
     messages = state["messages"]
-    llm = ChatOpenAI(
-        temperature=0.7,
+    llm = ChatBedrock(
+        temperature=0.3,
         streaming=True,
+        model="us.meta.llama3-2-3b-instruct-v1:0",
         # specifically for OpenAI we have to set parallel tool call to false
         # because of st primitively visually rendering the tool results
     ).bind_tools(tools, parallel_tool_calls=False)

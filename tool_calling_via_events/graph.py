@@ -1,11 +1,12 @@
-from typing import Annotated, TypedDict, Literal
+from typing import Annotated, TypedDict, Literal, Any
 
 from langgraph.prebuilt import ToolNode
 from langchain_core.tools import tool, StructuredTool
 from langgraph.graph import START, StateGraph
 from langgraph.graph.message import AnyMessage, add_messages
 from langchain_community.utilities import DuckDuckGoSearchAPIWrapper
-from langchain_openai import ChatOpenAI
+from langchain_aws import ChatBedrockConverse
+import streamlit as st
 
 # Define a search tool using DuckDuckGo API wrapper
 search_DDG = StructuredTool.from_function(
@@ -16,23 +17,54 @@ search_DDG = StructuredTool.from_function(
         """,
     )
 
-@tool
-def get_weather(location: str):
-    """Call to get the current weather."""
-    # A simplified weather response based on location
-    if location.lower() in ["sf", "san francisco"]:
-        return "It's 60 degrees and foggy."
-    else:
-        return "It's 90 degrees and sunny."
+# Define a function to evaluate Python code
+def evaluate_python_code(code: str) -> Any:
+    try:
+        # Execute the Python code
+        namespace = {}
+        exec(code, namespace)
+        return namespace
+    except Exception as e:
+        return f"Error: {str(e)}"
 
+# Call to evaluate Python code
 @tool
-def get_coolest_cities():
-    """Get a list of coolest cities."""
-    # Hardcoded response with a list of cool cities
-    return "nyc, sf"
+def python_repl(code: str) -> Any:
+    """
+    Evaluate the provided Python code and return the result.
+
+    Args:
+        code (str): The Python code to evaluate.
+
+    Returns:
+        Any: The result of the evaluated code or an error message.
+    """
+    result = evaluate_python_code(code)
+    return result
+
+# Define a function to render Markdown text
+def render_markdown(text: str) -> str:
+    # You can use a Markdown rendering library here to render the Markdown text
+    # For simplicity, let's just return the text as is for now
+    return text
+
+# Call to render Markdown text
+@tool
+def markdown_tool(text: str) -> str:
+    """
+    Render the provided Markdown text and return the formatted output.
+
+    Args:
+        text (str): The Markdown text to render.
+
+    Returns:
+        str: The formatted output after rendering the Markdown text.
+    """
+    formatted_text = render_markdown(text)
+    return formatted_text
 
 # List of tools that will be accessible to the graph via the ToolNode
-tools = [get_weather, get_coolest_cities, search_DDG]
+tools = [search_DDG, python_repl, markdown_tool]
 tool_node = ToolNode(tools)
 
 # This is the default state same as "MessageState" TypedDict but allows us accessibility to custom keys
@@ -53,12 +85,10 @@ def should_continue(state: GraphsState) -> Literal["tools", "__end__"]:
 # Core invocation of the model
 def _call_model(state: GraphsState):
     messages = state["messages"]
-    llm = ChatOpenAI(
-        temperature=0.7,
-        streaming=True,
-        # specifically for OpenAI we have to set parallel tool call to false
-        # because of st primitively visually rendering the tool results
-    ).bind_tools(tools, parallel_tool_calls=False)
+    llm = ChatBedrockConverse(
+        model="us.meta.llama3-2-90b-instruct-v1:0",
+        temperature=0.3
+    ).bind_tools(tools)
     response = llm.invoke(messages)
     return {"messages": [response]}  # add the response to the messages using LangGraph reducer paradigm
 
