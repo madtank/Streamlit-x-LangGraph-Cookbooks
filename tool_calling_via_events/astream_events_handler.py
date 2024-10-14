@@ -27,6 +27,12 @@ async def invoke_our_graph(st_messages, st_placeholder):
         if kind == "on_chat_model_stream":
             # The event corresponding to a stream of new content (tokens or chunks of text)
             addition = event["data"]["chunk"].content  # Extract the new content chunk
+            if isinstance(addition, list):
+                # Ensure all items in the list are strings
+                addition = ''.join(str(item['text']) for item in addition if isinstance(item, dict) and 'text' in item)
+            elif isinstance(addition, dict):
+                # Extract the text field from the dictionary
+                addition = addition.get('text', '')
             final_text += addition  # Append the new content to the accumulated text
             if addition:
                 token_placeholder.write(final_text)  # Update the st placeholder with the progressive response

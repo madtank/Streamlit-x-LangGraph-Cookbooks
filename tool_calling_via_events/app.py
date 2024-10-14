@@ -16,15 +16,15 @@ st.markdown("#### Chat Streaming and Tool Calling using Astream Events")
 if "expander_open" not in st.session_state:
     st.session_state.expander_open = True
 
-# Check if the OpenAI API key is set
-if not os.getenv('OPENAI_API_KEY'):
+# Check if the Anthropic API key is set
+if not os.getenv('ANTHROPIC_API_KEY'):
     # If not, display a sidebar input for the user to provide the API key
-    st.sidebar.header("OPENAI_API_KEY Setup")
+    st.sidebar.header("ANTHROPIC_API_KEY Setup")
     api_key = st.sidebar.text_input(label="API Key", type="password", label_visibility="collapsed")
-    os.environ["OPENAI_API_KEY"] = api_key
+    os.environ["ANTHROPIC_API_KEY"] = api_key
     # If no key is provided, show an info message and stop further execution and wait till key is entered
     if not api_key:
-        st.info("Please enter your OPENAI_API_KEY in the sidebar.")
+        st.info("Please enter your ANTHROPIC_API_KEY in the sidebar.")
         st.stop()
 
 # Capture user input from chat input
@@ -46,7 +46,7 @@ with st.expander(label="Simple Chat Streaming and Tool Calling using LangGraph's
 
 # Initialize chat messages in session state
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [AIMessage(content="How can I help you?")]
+    st.session_state["messages"] = []
 
 # Loop through all messages in the session state and render them as a chat on every st.refresh mech
 for msg in st.session_state.messages:
